@@ -16,6 +16,7 @@ import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
+import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
@@ -75,7 +76,7 @@ public class Game extends SimpleApplication implements ActionListener {
 //        cam.setFrustumFar(150f);
 //        flyCam.setMoveSpeed(10);
         flyCam.setEnabled(false);
-
+        
         setupKeys();
         PhysicsTestHelper.createPhysicsTestWorld(rootNode, assetManager, bulletAppState.getPhysicsSpace());
 //        setupFloor();
@@ -346,5 +347,6 @@ public class Game extends SimpleApplication implements ActionListener {
     @Override
     public void simpleUpdate(float tpf) {
         cam.lookAt(carNode1.getWorldTranslation(), Vector3f.UNIT_Y);
+//        cam.setLocation(Vector3f.UNIT_Y);
     }
 }
