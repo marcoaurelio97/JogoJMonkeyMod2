@@ -52,7 +52,7 @@ public class Game extends SimpleApplication implements ActionListener {
         inputManager.addListener(this, "Rights1");
         inputManager.addListener(this, "Ups1");
         inputManager.addListener(this, "Downs1");
-        
+
         inputManager.addMapping("Lefts2", new KeyTrigger(KeyInput.KEY_LEFT));
         inputManager.addMapping("Rights2", new KeyTrigger(KeyInput.KEY_RIGHT));
         inputManager.addMapping("Ups2", new KeyTrigger(KeyInput.KEY_UP));
@@ -61,7 +61,7 @@ public class Game extends SimpleApplication implements ActionListener {
         inputManager.addListener(this, "Rights2");
         inputManager.addListener(this, "Ups2");
         inputManager.addListener(this, "Downs2");
-        
+
         inputManager.addMapping("Space", new KeyTrigger(KeyInput.KEY_SPACE));
         inputManager.addMapping("Reset", new KeyTrigger(KeyInput.KEY_RETURN));
         inputManager.addListener(this, "Space");
@@ -76,7 +76,10 @@ public class Game extends SimpleApplication implements ActionListener {
 //        cam.setFrustumFar(150f);
 //        flyCam.setMoveSpeed(10);
         flyCam.setEnabled(false);
-        
+
+        cam.setLocation(new Vector3f(0, 200f, 0));
+        cam.setRotation(new Quaternion(-1, 0, 0, -90f));
+
         setupKeys();
         PhysicsTestHelper.createPhysicsTestWorld(rootNode, assetManager, bulletAppState.getPhysicsSpace());
 //        setupFloor();
@@ -195,7 +198,7 @@ public class Game extends SimpleApplication implements ActionListener {
         rootNode.attachChild(carNode1);
         getPhysicsSpace().add(player1);
     }
-    
+
     private void buildPlayer2() {
         float stiffness = 120.0f;//200=f1 car
         float compValue = 0.2f; //(lower than damp!)
@@ -301,7 +304,7 @@ public class Game extends SimpleApplication implements ActionListener {
             } else {
             }
         }
-        
+
         if (binding.equals("Lefts2")) {
             if (value) {
                 steeringValue2 += .5f;
@@ -347,6 +350,5 @@ public class Game extends SimpleApplication implements ActionListener {
     @Override
     public void simpleUpdate(float tpf) {
         cam.lookAt(carNode1.getWorldTranslation(), Vector3f.UNIT_Y);
-//        cam.setLocation(Vector3f.UNIT_Y);
     }
 }
