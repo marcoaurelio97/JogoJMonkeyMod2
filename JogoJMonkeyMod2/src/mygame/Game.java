@@ -1,19 +1,20 @@
 package mygame;
 
-import com.jme3.app.SettingsDialog;
 import com.jme3.app.SimpleApplication;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.bullet.BulletAppState;
 import com.jme3.bullet.PhysicsSpace;
+import com.jme3.bullet.collision.PhysicsCollisionEvent;
+import com.jme3.bullet.collision.PhysicsCollisionListener;
 import com.jme3.bullet.collision.shapes.CollisionShape;
-import com.jme3.bullet.collision.shapes.MeshCollisionShape;
+import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
-import com.jme3.bullet.objects.VehicleWheel;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
+import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
@@ -23,10 +24,9 @@ import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import com.jme3.scene.shape.Box;
-import com.jme3.system.AppSettings;
-import com.jme3.texture.Texture.WrapMode;
+import java.util.Random;
 
-public class Game extends SimpleApplication implements ActionListener {
+public class Game extends SimpleApplication implements ActionListener, PhysicsCollisionListener {
 
     private BulletAppState bulletAppState;
     private VehicleControl player1, player2;
@@ -35,7 +35,9 @@ public class Game extends SimpleApplication implements ActionListener {
     private float wheelRadius1, wheelRadius2;
     private float steeringValue1 = 0, steeringValue2 = 0;
     private float accelerationValue1 = 0, accelerationValue2 = 0;
-    private Node carNode1, carNode2;
+    private Node carNode1, carNode2, auxCam;
+    private Random r = new Random();
+    private long totalTime, currentTime;
 
     public static void main(String[] args) {
         Game app = new Game();
@@ -72,51 +74,38 @@ public class Game extends SimpleApplication implements ActionListener {
     public void simpleInitApp() {
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
-//        bulletAppState.getPhysicsSpace().enableDebug(assetManager);
-//        cam.setFrustumFar(150f);
-//        flyCam.setMoveSpeed(10);
         flyCam.setEnabled(false);
 
-        cam.setLocation(new Vector3f(0, 200f, 0));
+        auxCam = new Node();
+        rootNode.attachChild(auxCam);
+
+        totalTime = System.currentTimeMillis();
+
+        cam.setLocation(new Vector3f(-80, 50, 0));
         cam.setRotation(new Quaternion(-1, 0, 0, -90f));
 
         setupKeys();
         PhysicsTestHelper.createPhysicsTestWorld(rootNode, assetManager, bulletAppState.getPhysicsSpace());
-//        setupFloor();
         buildPlayer1();
         buildPlayer2();
 
+//        for (int i = 0; i < 15; i++) {
+//            createItem(10, -4, 0);
+//        }
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
         rootNode.addLight(dl);
 
         dl = new DirectionalLight();
         dl.setDirection(new Vector3f(0.5f, -0.1f, 0.3f).normalizeLocal());
-        //   rootNode.addLight(dl);
+
+        bulletAppState.getPhysicsSpace().addCollisionListener(this);
     }
 
     private PhysicsSpace getPhysicsSpace() {
         return bulletAppState.getPhysicsSpace();
     }
 
-//    public void setupFloor() {
-//        Material mat = assetManager.loadMaterial("Textures/Terrain/BrickWall/BrickWall.j3m");
-//        mat.getTextureParam("DiffuseMap").getTextureValue().setWrap(WrapMode.Repeat);
-////        mat.getTextureParam("NormalMap").getTextureValue().setWrap(WrapMode.Repeat);
-////        mat.getTextureParam("ParallaxMap").getTextureValue().setWrap(WrapMode.Repeat);
-//
-//        Box floor = new Box(Vector3f.ZERO, 140, 1f, 140);
-//        floor.scaleTextureCoordinates(new Vector2f(112.0f, 112.0f));
-//        Geometry floorGeom = new Geometry("Floor", floor);
-//        floorGeom.setShadowMode(ShadowMode.Receive);
-//        floorGeom.setMaterial(mat);
-//
-//        PhysicsNode tb = new PhysicsNode(floorGeom, new MeshCollisionShape(floorGeom.getMesh()), 0);
-//        tb.setLocalTranslation(new Vector3f(0f, -6, 0f));
-////        tb.attachDebugShape(assetManager);
-//        rootNode.attachChild(tb);
-//        getPhysicsSpace().add(tb);
-//    }
     private Geometry findGeom(Spatial spatial, String name) {
         if (spatial instanceof Node) {
             Node node = (Node) spatial;
@@ -136,7 +125,7 @@ public class Game extends SimpleApplication implements ActionListener {
     }
 
     private void buildPlayer1() {
-        float stiffness = 120.0f;//200=f1 car
+        float stiffness = 120.0f; //200=f1 car
         float compValue = 0.2f; //(lower than damp!)
         float dampValue = 0.3f;
         final float mass = 400;
@@ -146,6 +135,8 @@ public class Game extends SimpleApplication implements ActionListener {
         carNode1.setShadowMode(ShadowMode.Cast);
         Geometry chasis = findGeom(carNode1, "Car");
         BoundingBox box = (BoundingBox) chasis.getModelBound();
+
+        carNode1.setLocalTranslation(20, 0, 20);
 
         //Create a hull collision shape for the chassis
         CollisionShape carHull = CollisionShapeFactory.createDynamicMeshShape(chasis);
@@ -195,6 +186,8 @@ public class Game extends SimpleApplication implements ActionListener {
         player1.getWheel(2).setFrictionSlip(4);
         player1.getWheel(3).setFrictionSlip(4);
 
+        carNode1.setName("Car");
+
         rootNode.attachChild(carNode1);
         getPhysicsSpace().add(player1);
     }
@@ -210,6 +203,8 @@ public class Game extends SimpleApplication implements ActionListener {
         carNode2.setShadowMode(ShadowMode.Cast);
         Geometry chasis = findGeom(carNode2, "Car");
         BoundingBox box = (BoundingBox) chasis.getModelBound();
+
+        carNode2.setLocalTranslation(-20, 0, -20);
 
         //Create a hull collision shape for the chassis
         CollisionShape carHull = CollisionShapeFactory.createDynamicMeshShape(chasis);
@@ -259,6 +254,8 @@ public class Game extends SimpleApplication implements ActionListener {
         player2.getWheel(2).setFrictionSlip(4);
         player2.getWheel(3).setFrictionSlip(4);
 
+        carNode2.setName("Car2");
+
         rootNode.attachChild(carNode2);
         getPhysicsSpace().add(player2);
     }
@@ -296,7 +293,8 @@ public class Game extends SimpleApplication implements ActionListener {
         } else if (binding.equals("Reset")) {
             if (value) {
                 System.out.println("Reset");
-                player1.setPhysicsLocation(Vector3f.ZERO);
+//                player1.setPhysicsLocation(Vector3f.ZERO);
+                player1.setPhysicsLocation(new Vector3f(45, 0, 45));
                 player1.setPhysicsRotation(new Matrix3f());
                 player1.setLinearVelocity(Vector3f.ZERO);
                 player1.setAngularVelocity(Vector3f.ZERO);
@@ -337,7 +335,7 @@ public class Game extends SimpleApplication implements ActionListener {
         } else if (binding.equals("Reset")) {
             if (value) {
                 System.out.println("Reset");
-                player2.setPhysicsLocation(Vector3f.ZERO);
+                player2.setPhysicsLocation(new Vector3f(-45, 0, -45));
                 player2.setPhysicsRotation(new Matrix3f());
                 player2.setLinearVelocity(Vector3f.ZERO);
                 player2.setAngularVelocity(Vector3f.ZERO);
@@ -349,6 +347,48 @@ public class Game extends SimpleApplication implements ActionListener {
 
     @Override
     public void simpleUpdate(float tpf) {
-        cam.lookAt(carNode1.getWorldTranslation(), Vector3f.UNIT_Y);
+//        cam.lookAt(rootNode.getChild("Item").getWorldTranslation(), Vector3f.UNIT_Y);
+        cam.lookAt(auxCam.getWorldTranslation(), Vector3f.UNIT_Y);
+//        rootNode.getChild("Item").rotate(0, tpf, 0);
+
+        currentTime = System.currentTimeMillis();
+
+        if (currentTime - totalTime >= 500) {
+            int x = r.nextInt(40);
+            int y = r.nextInt(40);
+            int z = r.nextInt(40);
+            createItem(x - 20, -5, z - 20);
+            totalTime = currentTime;
+        }
+    }
+
+    private void createItem(float x, float y, float z) {
+        Node duck = (Node) assetManager.loadModel("Models/Jaime/Jaime.j3o");
+        duck.setLocalTranslation(x, y, z);
+        duck.setLocalScale(5);
+        duck.rotate(0.0f, 0.1f, 0.0f);
+        duck.setName("Item");
+        rootNode.attachChild(duck);
+
+        RigidBodyControl boxPhysicsNode = new RigidBodyControl(0);
+        duck.addControl(boxPhysicsNode);
+        bulletAppState.getPhysicsSpace().add(boxPhysicsNode);
+    }
+
+    @Override
+    public void collision(PhysicsCollisionEvent event) {
+        if (event.getNodeA().getName().equals("Car")
+                || event.getNodeB().getName().equals("Car")) {
+
+            if (event.getNodeA().getName().equals("Item")) {
+                Spatial s = event.getNodeA();
+                rootNode.detachChild(s);
+                bulletAppState.getPhysicsSpace().removeAll(s);
+            } else if (event.getNodeB().getName().equals("Item")) {
+                Spatial s = event.getNodeB();
+                rootNode.detachChild(s);
+                bulletAppState.getPhysicsSpace().removeAll(s);
+            }
+        }
     }
 }
