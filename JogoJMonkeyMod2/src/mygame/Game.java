@@ -14,7 +14,6 @@ import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
-import com.jme3.material.Material;
 import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
@@ -23,26 +22,25 @@ import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
-import com.jme3.scene.shape.Box;
 import java.util.Random;
 
 public class Game extends SimpleApplication implements ActionListener, PhysicsCollisionListener {
 
     private BulletAppState bulletAppState;
     private VehicleControl player1, player2;
-//    private VehicleWheel fr, fl, br, bl;
-//    private Node node_fr, node_fl, node_br, node_bl;
     private float wheelRadius1, wheelRadius2;
     private float steeringValue1 = 0, steeringValue2 = 0;
     private float accelerationValue1 = 0, accelerationValue2 = 0;
     private Node carNode1, carNode2, auxCam;
     private Random r = new Random();
     private long totalTime, currentTime;
+    private int points1 = 0, points2 = 0;
 
     public static void main(String[] args) {
         Game app = new Game();
         app.showSettings = false;
         app.start();
+        //bitmapText
     }
 
     private void setupKeys() {
@@ -86,12 +84,11 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
 
         setupKeys();
         PhysicsTestHelper.createPhysicsTestWorld(rootNode, assetManager, bulletAppState.getPhysicsSpace());
-        buildPlayer1();
-        buildPlayer2();
+//        buildPlayer1();
+//        buildPlayer2();
+        player1 = buildPlayer(carNode1, wheelRadius1, 20, "Car1");
+        player2 = buildPlayer(carNode2, wheelRadius2, -20, "Car2");
 
-//        for (int i = 0; i < 15; i++) {
-//            createItem(10, -4, 0);
-//        }
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
         rootNode.addLight(dl);
@@ -124,140 +121,74 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         return null;
     }
 
-    private void buildPlayer1() {
-        float stiffness = 120.0f; //200=f1 car
-        float compValue = 0.2f; //(lower than damp!)
+    private VehicleControl buildPlayer(Node carNode, float wheelRadius, int XYZ, String name) {
+        float stiffness = 120.0f;
+        float compValue = 0.2f;
         float dampValue = 0.3f;
         final float mass = 400;
 
-        //Load model and get chassis Geometry
-        carNode1 = (Node) assetManager.loadModel("Models/Ferrari/Car.scene");
-        carNode1.setShadowMode(ShadowMode.Cast);
-        Geometry chasis = findGeom(carNode1, "Car");
+        carNode = (Node) assetManager.loadModel("Models/Ferrari/Car.scene");
+        carNode.setShadowMode(ShadowMode.Cast);
+        Geometry chasis = findGeom(carNode, "Car");
         BoundingBox box = (BoundingBox) chasis.getModelBound();
 
-        carNode1.setLocalTranslation(20, 0, 20);
+        carNode.setLocalTranslation(XYZ, 0, XYZ);
 
-        //Create a hull collision shape for the chassis
         CollisionShape carHull = CollisionShapeFactory.createDynamicMeshShape(chasis);
 
-        //Create a vehicle control
-        player1 = new VehicleControl(carHull, mass);
-        carNode1.addControl(player1);
+        VehicleControl player = new VehicleControl(carHull, mass);
+        carNode.addControl(player);
 
-        //Setting default values for wheels
-        player1.setSuspensionCompression(compValue * 2.0f * FastMath.sqrt(stiffness));
-        player1.setSuspensionDamping(dampValue * 2.0f * FastMath.sqrt(stiffness));
-        player1.setSuspensionStiffness(stiffness);
-        player1.setMaxSuspensionForce(10000);
+        player.setSuspensionCompression(compValue * 2.0f * FastMath.sqrt(stiffness));
+        player.setSuspensionDamping(dampValue * 2.0f * FastMath.sqrt(stiffness));
+        player.setSuspensionStiffness(stiffness);
+        player.setMaxSuspensionForce(10000);
 
-        //Create four wheels and add them at their locations
-        //note that our fancy car actually goes backwards..
         Vector3f wheelDirection = new Vector3f(0, -1, 0);
         Vector3f wheelAxle = new Vector3f(-1, 0, 0);
 
-        Geometry wheel_fr = findGeom(carNode1, "WheelFrontRight");
+        Geometry wheel_fr = findGeom(carNode, "WheelFrontRight");
         wheel_fr.center();
         box = (BoundingBox) wheel_fr.getModelBound();
-        wheelRadius1 = box.getYExtent();
-        float back_wheel_h = (wheelRadius1 * 1.7f) - 1f;
-        float front_wheel_h = (wheelRadius1 * 1.9f) - 1f;
-        player1.addWheel(wheel_fr.getParent(), box.getCenter().add(0, -front_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius1, true);
+        wheelRadius = box.getYExtent();
+        float back_wheel_h = (wheelRadius * 1.7f) - 1f;
+        float front_wheel_h = (wheelRadius * 1.9f) - 1f;
+        player.addWheel(wheel_fr.getParent(), box.getCenter().add(0, -front_wheel_h, 0),
+                wheelDirection, wheelAxle, 0.2f, wheelRadius, true);
 
-        Geometry wheel_fl = findGeom(carNode1, "WheelFrontLeft");
+        Geometry wheel_fl = findGeom(carNode, "WheelFrontLeft");
         wheel_fl.center();
         box = (BoundingBox) wheel_fl.getModelBound();
-        player1.addWheel(wheel_fl.getParent(), box.getCenter().add(0, -front_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius1, true);
+        player.addWheel(wheel_fl.getParent(), box.getCenter().add(0, -front_wheel_h, 0),
+                wheelDirection, wheelAxle, 0.2f, wheelRadius, true);
 
-        Geometry wheel_br = findGeom(carNode1, "WheelBackRight");
+        Geometry wheel_br = findGeom(carNode, "WheelBackRight");
         wheel_br.center();
         box = (BoundingBox) wheel_br.getModelBound();
-        player1.addWheel(wheel_br.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius1, false);
+        player.addWheel(wheel_br.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
+                wheelDirection, wheelAxle, 0.2f, wheelRadius, false);
 
-        Geometry wheel_bl = findGeom(carNode1, "WheelBackLeft");
+        Geometry wheel_bl = findGeom(carNode, "WheelBackLeft");
         wheel_bl.center();
         box = (BoundingBox) wheel_bl.getModelBound();
-        player1.addWheel(wheel_bl.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius1, false);
+        player.addWheel(wheel_bl.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
+                wheelDirection, wheelAxle, 0.2f, wheelRadius, false);
 
-        player1.getWheel(2).setFrictionSlip(4);
-        player1.getWheel(3).setFrictionSlip(4);
+        player.getWheel(2).setFrictionSlip(4);
+        player.getWheel(3).setFrictionSlip(4);
 
-        carNode1.setName("Car");
+        carNode.setName(name);
 
-        rootNode.attachChild(carNode1);
-        getPhysicsSpace().add(player1);
-    }
+        rootNode.attachChild(carNode);
+        getPhysicsSpace().add(player);
 
-    private void buildPlayer2() {
-        float stiffness = 120.0f;//200=f1 car
-        float compValue = 0.2f; //(lower than damp!)
-        float dampValue = 0.3f;
-        final float mass = 400;
+        if ("Car1".equals(name)) {
+            carNode1 = carNode;
+        } else {
+            carNode2 = carNode;
+        }
 
-        //Load model and get chassis Geometry
-        carNode2 = (Node) assetManager.loadModel("Models/Ferrari/Car.scene");
-        carNode2.setShadowMode(ShadowMode.Cast);
-        Geometry chasis = findGeom(carNode2, "Car");
-        BoundingBox box = (BoundingBox) chasis.getModelBound();
-
-        carNode2.setLocalTranslation(-20, 0, -20);
-
-        //Create a hull collision shape for the chassis
-        CollisionShape carHull = CollisionShapeFactory.createDynamicMeshShape(chasis);
-
-        //Create a vehicle control
-        player2 = new VehicleControl(carHull, mass);
-        carNode2.addControl(player2);
-
-        //Setting default values for wheels
-        player2.setSuspensionCompression(compValue * 2.0f * FastMath.sqrt(stiffness));
-        player2.setSuspensionDamping(dampValue * 2.0f * FastMath.sqrt(stiffness));
-        player2.setSuspensionStiffness(stiffness);
-        player2.setMaxSuspensionForce(10000);
-
-        //Create four wheels and add them at their locations
-        //note that our fancy car actually goes backwards..
-        Vector3f wheelDirection = new Vector3f(0, -1, 0);
-        Vector3f wheelAxle = new Vector3f(-1, 0, 0);
-
-        Geometry wheel_fr = findGeom(carNode2, "WheelFrontRight");
-        wheel_fr.center();
-        box = (BoundingBox) wheel_fr.getModelBound();
-        wheelRadius2 = box.getYExtent();
-        float back_wheel_h = (wheelRadius2 * 1.7f) - 1f;
-        float front_wheel_h = (wheelRadius2 * 1.9f) - 1f;
-        player2.addWheel(wheel_fr.getParent(), box.getCenter().add(0, -front_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius2, true);
-
-        Geometry wheel_fl = findGeom(carNode2, "WheelFrontLeft");
-        wheel_fl.center();
-        box = (BoundingBox) wheel_fl.getModelBound();
-        player2.addWheel(wheel_fl.getParent(), box.getCenter().add(0, -front_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius2, true);
-
-        Geometry wheel_br = findGeom(carNode2, "WheelBackRight");
-        wheel_br.center();
-        box = (BoundingBox) wheel_br.getModelBound();
-        player2.addWheel(wheel_br.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius2, false);
-
-        Geometry wheel_bl = findGeom(carNode2, "WheelBackLeft");
-        wheel_bl.center();
-        box = (BoundingBox) wheel_bl.getModelBound();
-        player2.addWheel(wheel_bl.getParent(), box.getCenter().add(0, -back_wheel_h, 0),
-                wheelDirection, wheelAxle, 0.2f, wheelRadius2, false);
-
-        player2.getWheel(2).setFrictionSlip(4);
-        player2.getWheel(3).setFrictionSlip(4);
-
-        carNode2.setName("Car2");
-
-        rootNode.attachChild(carNode2);
-        getPhysicsSpace().add(player2);
+        return player;
     }
 
     public void onAction(String binding, boolean value, float tpf) {
@@ -275,8 +206,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 steeringValue1 += .5f;
             }
             player1.steer(steeringValue1);
-        } //note that our fancy car actually goes backwards..
-        else if (binding.equals("Ups1")) {
+        } else if (binding.equals("Ups1")) {
             if (value) {
                 accelerationValue1 -= 800;
             } else {
@@ -289,17 +219,6 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 player1.brake(40f);
             } else {
                 player1.brake(0f);
-            }
-        } else if (binding.equals("Reset")) {
-            if (value) {
-                System.out.println("Reset");
-//                player1.setPhysicsLocation(Vector3f.ZERO);
-                player1.setPhysicsLocation(new Vector3f(45, 0, 45));
-                player1.setPhysicsRotation(new Matrix3f());
-                player1.setLinearVelocity(Vector3f.ZERO);
-                player1.setAngularVelocity(Vector3f.ZERO);
-                player1.resetSuspension();
-            } else {
             }
         }
 
@@ -317,8 +236,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 steeringValue2 += .5f;
             }
             player2.steer(steeringValue2);
-        } //note that our fancy car actually goes backwards..
-        else if (binding.equals("Ups2")) {
+        } else if (binding.equals("Ups2")) {
             if (value) {
                 accelerationValue2 -= 800;
             } else {
@@ -334,13 +252,28 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
             }
         } else if (binding.equals("Reset")) {
             if (value) {
-                System.out.println("Reset");
-                player2.setPhysicsLocation(new Vector3f(-45, 0, -45));
-                player2.setPhysicsRotation(new Matrix3f());
-                player2.setLinearVelocity(Vector3f.ZERO);
-                player2.setAngularVelocity(Vector3f.ZERO);
-                player2.resetSuspension();
+                resetGame();
             } else {
+            }
+        }
+    }
+
+    public void resetGame() {
+        player1.setPhysicsLocation(new Vector3f(20, 0, 20));
+        player1.setPhysicsRotation(new Matrix3f());
+        player1.setLinearVelocity(Vector3f.ZERO);
+        player1.setAngularVelocity(Vector3f.ZERO);
+        player1.resetSuspension();
+
+        player2.setPhysicsLocation(new Vector3f(-20, 0, -20));
+        player2.setPhysicsRotation(new Matrix3f());
+        player2.setLinearVelocity(Vector3f.ZERO);
+        player2.setAngularVelocity(Vector3f.ZERO);
+        player2.resetSuspension();
+
+        for (Spatial spatial : rootNode.getChildren()) {
+            if ("Item".equals(spatial.getName())) {
+                rootNode.detachChild(spatial);
             }
         }
     }
@@ -349,16 +282,25 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     public void simpleUpdate(float tpf) {
 //        cam.lookAt(rootNode.getChild("Item").getWorldTranslation(), Vector3f.UNIT_Y);
         cam.lookAt(auxCam.getWorldTranslation(), Vector3f.UNIT_Y);
-//        rootNode.getChild("Item").rotate(0, tpf, 0);
+
+        if (rootNode.getChild("Item") != null) {
+            for (Spatial spatial : rootNode.getChildren()) {
+                if ("Item".equals(spatial.getName())) {
+                    spatial.rotate(0, tpf, 0);
+                }
+            }
+        }
 
         currentTime = System.currentTimeMillis();
 
-        if (currentTime - totalTime >= 500) {
+        if (currentTime - totalTime >= 5000) {
             int x = r.nextInt(40);
             int y = r.nextInt(40);
             int z = r.nextInt(40);
             createItem(x - 20, -5, z - 20);
             totalTime = currentTime;
+            System.out.println("Car1 " + points1);
+            System.out.println("Car2 " + points2);
         }
     }
 
@@ -377,17 +319,35 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
 
     @Override
     public void collision(PhysicsCollisionEvent event) {
-        if (event.getNodeA().getName().equals("Car")
-                || event.getNodeB().getName().equals("Car")) {
+        if (event.getNodeA().getName().equals("Car1")
+                || event.getNodeB().getName().equals("Car1")) {
 
             if (event.getNodeA().getName().equals("Item")) {
                 Spatial s = event.getNodeA();
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
+                points1++;
             } else if (event.getNodeB().getName().equals("Item")) {
                 Spatial s = event.getNodeB();
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
+                points1++;
+            }
+        }
+
+        if (event.getNodeA().getName().equals("Car2")
+                || event.getNodeB().getName().equals("Car2")) {
+
+            if (event.getNodeA().getName().equals("Item")) {
+                Spatial s = event.getNodeA();
+                rootNode.detachChild(s);
+                bulletAppState.getPhysicsSpace().removeAll(s);
+                points2++;
+            } else if (event.getNodeB().getName().equals("Item")) {
+                Spatial s = event.getNodeB();
+                rootNode.detachChild(s);
+                bulletAppState.getPhysicsSpace().removeAll(s);
+                points2++;
             }
         }
     }
