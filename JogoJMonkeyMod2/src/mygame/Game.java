@@ -38,6 +38,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     private Random r = new Random();
     private long totalTime, currentTime;
     private int points1 = 0, points2 = 0;
+    private int wins1 = 0, wins2 = 0;
 
     public static void main(String[] args) {
         Game app = new Game();
@@ -302,27 +303,42 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
             int z = r.nextInt(40);
             createItem(x - 20, -5, z - 20);
             totalTime = currentTime;
-            System.out.println("Car1 " + points1);
-            System.out.println("Car2 " + points2);
         }
 
         atualizaPontos();
+        verificaPlayerFora();
     }
 
     private void atualizaPontos() {
         rootNode.detachChildNamed("TextPoints");
-        
+        rootNode.detachChildNamed("TextWins");
+
         BitmapFont labelFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
         BitmapText label = new BitmapText(labelFont);
         label.setSize(2);
-        label.setText("Player 1: " + points1 + "\nPlayer 2: " + points2);
-        label.setLocalTranslation(-50, 43, -4);
+        label.setText("Player 1: " + points1 + "   Wins: " + wins1 + "\nPlayer 2: " + points2 + "   Wins: " + wins2);
+        label.setLocalTranslation(-50, 43, -7.7f);
         label.rotate(0, 30, -0.05f);
         label.setQueueBucket(RenderQueue.Bucket.Transparent);
         label.setName("TextPoints");
         rootNode.attachChild(label);
     }
-    
+
+    private void verificaPlayerFora() {
+        float y1 = rootNode.getChild("Car1").getLocalTranslation().y;
+        float y2 = rootNode.getChild("Car2").getLocalTranslation().y;
+
+        if (y1 <= -20) {
+            wins2++;
+            resetGame();
+        }
+
+        if (y2 <= -20) {
+            wins1++;
+            resetGame();
+        }
+    }
+
     private void createItem(float x, float y, float z) {
         Node duck = (Node) assetManager.loadModel("Models/Jaime/Jaime.j3o");
         duck.setLocalTranslation(x, y, z);
