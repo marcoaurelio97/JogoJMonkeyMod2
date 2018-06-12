@@ -39,6 +39,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     private long totalTime, currentTime;
     private int points1 = 0, points2 = 0;
     private int wins1 = 0, wins2 = 0;
+    private boolean telaInicial = true;
 
     public static void main(String[] args) {
         Game app = new Game();
@@ -89,8 +90,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
 
         setupKeys();
         PhysicsTestHelper.createPhysicsTestWorld(rootNode, assetManager, bulletAppState.getPhysicsSpace());
-//        buildPlayer1();
-//        buildPlayer2();
+
         player1 = buildPlayer(carNode1, wheelRadius1, 20, "Car1");
         player2 = buildPlayer(carNode2, wheelRadius2, -20, "Car2");
 
@@ -197,6 +197,13 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     }
 
     public void onAction(String binding, boolean value, float tpf) {
+        if (binding.equals("Space")) {
+            if (value) {
+                telaInicial = false;
+            } else {
+            }
+        }
+
         if (binding.equals("Lefts1")) {
             if (value) {
                 steeringValue1 += .5f;
@@ -257,6 +264,11 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
             }
         } else if (binding.equals("Reset")) {
             if (value) {
+                wins1 = 0;
+                wins2 = 0;
+                telaInicial = true;
+                rootNode.detachChildNamed("TextPoints");
+                rootNode.detachChildNamed("TextWins");
                 resetGame();
             } else {
             }
@@ -276,6 +288,9 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         player2.setAngularVelocity(Vector3f.ZERO);
         player2.resetSuspension();
 
+        points1 = 0;
+        points2 = 0;
+
         for (Spatial spatial : rootNode.getChildren()) {
             if ("Item".equals(spatial.getName())) {
                 rootNode.detachChild(spatial);
@@ -287,31 +302,36 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     public void simpleUpdate(float tpf) {
         cam.lookAt(auxCam.getWorldTranslation(), Vector3f.UNIT_Y);
 
-        if (rootNode.getChild("Item") != null) {
-            for (Spatial spatial : rootNode.getChildren()) {
-                if ("Item".equals(spatial.getName())) {
-                    spatial.rotate(0, tpf, 0);
+        if (telaInicial) {
+            exibeTelaInicial();
+        } else {
+            if (rootNode.getChild("Item") != null) {
+                for (Spatial spatial : rootNode.getChildren()) {
+                    if ("Item".equals(spatial.getName())) {
+                        spatial.rotate(0, tpf, 0);
+                    }
                 }
             }
+
+            currentTime = System.currentTimeMillis();
+
+            if (currentTime - totalTime >= 5000) {
+                int x = r.nextInt(40);
+                int y = r.nextInt(40);
+                int z = r.nextInt(40);
+                createItem(x - 20, -5, z - 20);
+                totalTime = currentTime;
+            }
+
+            atualizaPontos();
+            verificaPlayerFora();
         }
-
-        currentTime = System.currentTimeMillis();
-
-        if (currentTime - totalTime >= 5000) {
-            int x = r.nextInt(40);
-            int y = r.nextInt(40);
-            int z = r.nextInt(40);
-            createItem(x - 20, -5, z - 20);
-            totalTime = currentTime;
-        }
-
-        atualizaPontos();
-        verificaPlayerFora();
     }
 
     private void atualizaPontos() {
         rootNode.detachChildNamed("TextPoints");
         rootNode.detachChildNamed("TextWins");
+        rootNode.detachChildNamed("TextStart");
 
         BitmapFont labelFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
         BitmapText label = new BitmapText(labelFont);
@@ -350,6 +370,18 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         RigidBodyControl boxPhysicsNode = new RigidBodyControl(0);
         duck.addControl(boxPhysicsNode);
         bulletAppState.getPhysicsSpace().add(boxPhysicsNode);
+    }
+
+    private void exibeTelaInicial() {
+        BitmapFont labelFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        BitmapText label = new BitmapText(labelFont);
+        label.setSize(2);
+        label.setText("Press space to begin!");
+        label.setLocalTranslation(-50, 43, -7.7f);
+        label.rotate(0, 30, -0.045f);
+        label.setQueueBucket(RenderQueue.Bucket.Transparent);
+        label.setName("TextStart");
+        rootNode.attachChild(label);
     }
 
     @Override
