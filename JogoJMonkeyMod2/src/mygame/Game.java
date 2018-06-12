@@ -10,6 +10,8 @@ import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.control.RigidBodyControl;
 import com.jme3.bullet.control.VehicleControl;
 import com.jme3.bullet.util.CollisionShapeFactory;
+import com.jme3.font.BitmapFont;
+import com.jme3.font.BitmapText;
 import com.jme3.input.KeyInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
@@ -18,6 +20,7 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
+import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.renderer.queue.RenderQueue.ShadowMode;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
@@ -40,7 +43,6 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         Game app = new Game();
         app.showSettings = false;
         app.start();
-        //bitmapText
     }
 
     private void setupKeys() {
@@ -73,6 +75,8 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         bulletAppState = new BulletAppState();
         stateManager.attach(bulletAppState);
         flyCam.setEnabled(false);
+        setDisplayFps(false);
+        setDisplayStatView(false);
 
         auxCam = new Node();
         rootNode.attachChild(auxCam);
@@ -280,7 +284,6 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
 
     @Override
     public void simpleUpdate(float tpf) {
-//        cam.lookAt(rootNode.getChild("Item").getWorldTranslation(), Vector3f.UNIT_Y);
         cam.lookAt(auxCam.getWorldTranslation(), Vector3f.UNIT_Y);
 
         if (rootNode.getChild("Item") != null) {
@@ -302,8 +305,24 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
             System.out.println("Car1 " + points1);
             System.out.println("Car2 " + points2);
         }
+
+        atualizaPontos();
     }
 
+    private void atualizaPontos() {
+        rootNode.detachChildNamed("TextPoints");
+        
+        BitmapFont labelFont = assetManager.loadFont("Interface/Fonts/Default.fnt");
+        BitmapText label = new BitmapText(labelFont);
+        label.setSize(2);
+        label.setText("Player 1: " + points1 + "\nPlayer 2: " + points2);
+        label.setLocalTranslation(-50, 43, -4);
+        label.rotate(0, 30, -0.05f);
+        label.setQueueBucket(RenderQueue.Bucket.Transparent);
+        label.setName("TextPoints");
+        rootNode.attachChild(label);
+    }
+    
     private void createItem(float x, float y, float z) {
         Node duck = (Node) assetManager.loadModel("Models/Jaime/Jaime.j3o");
         duck.setLocalTranslation(x, y, z);
