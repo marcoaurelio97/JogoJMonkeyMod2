@@ -17,7 +17,6 @@ import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.KeyTrigger;
 import com.jme3.light.DirectionalLight;
 import com.jme3.math.FastMath;
-import com.jme3.math.Matrix3f;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
 import com.jme3.renderer.queue.RenderQueue;
@@ -81,12 +80,12 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         setDisplayStatView(false);
 
         telaInicial = true;
-        
+
         auxCam = new Node();
         rootNode.attachChild(auxCam);
 
         totalTime = System.currentTimeMillis();
-        pointsTotalTime1 = System.currentTimeMillis();        
+        pointsTotalTime1 = System.currentTimeMillis();
         pointsTotalTime2 = System.currentTimeMillis();
 
         cam.setLocation(new Vector3f(-80, 50, 0));
@@ -144,7 +143,6 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         Quaternion q = new Quaternion();
         carNode.setLocalTranslation(XYZ, 0, XYZ);
 
-
         CollisionShape carHull = CollisionShapeFactory.createDynamicMeshShape(chasis);
 
         VehicleControl player = new VehicleControl(carHull, mass);
@@ -189,7 +187,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         player.getWheel(3).setFrictionSlip(4);
 
         player.setPhysicsRotation(q.fromAngles(0, angle, 0));
-        
+
         carNode.setName(name);
 
         rootNode.attachChild(carNode);
@@ -205,7 +203,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     }
 
     public void onAction(String binding, boolean value, float tpf) {
-        if(telaInicial){
+        if (telaInicial) {
             if (binding.equals("Space")) {
                 if (value) {
                     telaInicial = false;
@@ -213,7 +211,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 }
             }
         } else {
-           if (binding.equals("Lefts1")) {
+            if (binding.equals("Lefts1")) {
                 if (value) {
                     steeringValue1 += .5f;
                 } else {
@@ -236,7 +234,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 player1.accelerate(accelerationValue1);
                 player1.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode1, "Car")));
             } else if (binding.equals("Downs1")) {
-                 if (value) {
+                if (value) {
                     accelerationValue1 += 800;
                 } else {
                     accelerationValue1 -= 800;
@@ -283,21 +281,19 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                     resetGame();
                 } else {
                 }
-            } 
+            }
         }
-
-        
     }
 
     public void resetGame() {
-        
+
         Quaternion q = new Quaternion();
         player1.setPhysicsLocation(new Vector3f(20, 0, 20));
         player1.setPhysicsRotation(q.fromAngles(0, 45, 0));
         player1.setLinearVelocity(Vector3f.ZERO);
         player1.setAngularVelocity(Vector3f.ZERO);
         player1.resetSuspension();
-        
+
         player2.setPhysicsLocation(new Vector3f(-20, 0, -20));
         player2.setPhysicsRotation(q.fromAngles(0, -90, 0));
         player2.setLinearVelocity(Vector3f.ZERO);
@@ -331,7 +327,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
 
             currentTime = System.currentTimeMillis();
 
-            if (currentTime - totalTime >= 5000) {
+            if (currentTime - totalTime >= 2500) {
                 int x = r.nextInt(40);
                 int y = r.nextInt(40);
                 int z = r.nextInt(40);
@@ -374,12 +370,12 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
             resetGame();
         }
 
-        if (points1 >= 10){
+        if (points1 >= 10) {
             wins1++;
             resetGame();
         }
-        
-        if (points2 >= 10){
+
+        if (points2 >= 10) {
             wins2++;
             resetGame();
         }
@@ -420,16 +416,16 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
                 pointsCurTime1 = System.currentTimeMillis();
-                if (pointsCurTime1 - pointsTotalTime1 >= 100) {
+                if (pointsCurTime1 - pointsTotalTime1 >= 50) {
                     points1++;
                 }
             } else if (event.getNodeB().getName().equals("Item")) {
                 Spatial s = event.getNodeB();
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
-                
+
                 pointsCurTime1 = System.currentTimeMillis();
-                if (pointsCurTime1 - pointsTotalTime1 >= 100) {
+                if (pointsCurTime1 - pointsTotalTime1 >= 50) {
                     points1++;
                     pointsTotalTime1 = pointsCurTime1;
                 }
@@ -444,7 +440,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
                 pointsCurTime2 = System.currentTimeMillis();
-                if (pointsCurTime2 - pointsTotalTime2 >= 100) {
+                if (pointsCurTime2 - pointsTotalTime2 >= 50) {
                     points2++;
                     pointsTotalTime2 = pointsCurTime2;
                 }
@@ -453,7 +449,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
                 pointsCurTime2 = System.currentTimeMillis();
-                if (pointsCurTime2 - pointsTotalTime2 >= 100) {
+                if (pointsCurTime2 - pointsTotalTime2 >= 50) {
                     points2++;
                     pointsTotalTime2 = pointsCurTime2;
                 }
