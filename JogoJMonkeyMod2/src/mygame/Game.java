@@ -36,10 +36,10 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     private float accelerationValue1 = 0, accelerationValue2 = 0;
     private Node carNode1, carNode2, auxCam;
     private Random r = new Random();
-    private long totalTime, currentTime;
+    private long totalTime, currentTime, pointsCurTime1, pointsTotalTime1, pointsCurTime2, pointsTotalTime2;
     private int points1 = 0, points2 = 0;
     private int wins1 = 0, wins2 = 0;
-    private boolean telaInicial = true;
+    private boolean telaInicial;
 
     public static void main(String[] args) {
         Game app = new Game();
@@ -80,10 +80,14 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         setDisplayFps(false);
         setDisplayStatView(false);
 
+        telaInicial = true;
+        
         auxCam = new Node();
         rootNode.attachChild(auxCam);
 
         totalTime = System.currentTimeMillis();
+        pointsTotalTime1 = System.currentTimeMillis();        
+        pointsTotalTime2 = System.currentTimeMillis();
 
         cam.setLocation(new Vector3f(-80, 50, 0));
         cam.setRotation(new Quaternion(-1, 0, 0, -90f));
@@ -91,8 +95,8 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         setupKeys();
         PhysicsTestHelper.createPhysicsTestWorld(rootNode, assetManager, bulletAppState.getPhysicsSpace());
 
-        player1 = buildPlayer(carNode1, wheelRadius1, 20, "Car1");
-        player2 = buildPlayer(carNode2, wheelRadius2, -20, "Car2");
+        player1 = buildPlayer(carNode1, wheelRadius1, 20, "Car1", 45);
+        player2 = buildPlayer(carNode2, wheelRadius2, -20, "Car2", -90);
 
         DirectionalLight dl = new DirectionalLight();
         dl.setDirection(new Vector3f(-0.5f, -1f, -0.3f).normalizeLocal());
@@ -126,7 +130,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         return null;
     }
 
-    private VehicleControl buildPlayer(Node carNode, float wheelRadius, int XYZ, String name) {
+    private VehicleControl buildPlayer(Node carNode, float wheelRadius, int XYZ, String name, int angle) {
         float stiffness = 120.0f;
         float compValue = 0.2f;
         float dampValue = 0.3f;
@@ -137,7 +141,9 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         Geometry chasis = findGeom(carNode, "Car");
         BoundingBox box = (BoundingBox) chasis.getModelBound();
 
+        Quaternion q = new Quaternion();
         carNode.setLocalTranslation(XYZ, 0, XYZ);
+
 
         CollisionShape carHull = CollisionShapeFactory.createDynamicMeshShape(chasis);
 
@@ -182,6 +188,8 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         player.getWheel(2).setFrictionSlip(4);
         player.getWheel(3).setFrictionSlip(4);
 
+        player.setPhysicsRotation(q.fromAngles(0, angle, 0));
+        
         carNode.setName(name);
 
         rootNode.attachChild(carNode);
@@ -197,93 +205,101 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
     }
 
     public void onAction(String binding, boolean value, float tpf) {
-        if (binding.equals("Space")) {
-            if (value) {
-                telaInicial = false;
-            } else {
+        if(telaInicial){
+            if (binding.equals("Space")) {
+                if (value) {
+                    telaInicial = false;
+                } else {
+                }
             }
+        } else {
+           if (binding.equals("Lefts1")) {
+                if (value) {
+                    steeringValue1 += .5f;
+                } else {
+                    steeringValue1 += -.5f;
+                }
+                player1.steer(steeringValue1);
+            } else if (binding.equals("Rights1")) {
+                if (value) {
+                    steeringValue1 += -.5f;
+                } else {
+                    steeringValue1 += .5f;
+                }
+                player1.steer(steeringValue1);
+            } else if (binding.equals("Ups1")) {
+                if (value) {
+                    accelerationValue1 -= 800;
+                } else {
+                    accelerationValue1 += 800;
+                }
+                player1.accelerate(accelerationValue1);
+                player1.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode1, "Car")));
+            } else if (binding.equals("Downs1")) {
+                 if (value) {
+                    accelerationValue1 += 800;
+                } else {
+                    accelerationValue1 -= 800;
+                }
+                player1.accelerate(accelerationValue1);
+            }
+
+            if (binding.equals("Lefts2")) {
+                if (value) {
+                    steeringValue2 += .5f;
+                } else {
+                    steeringValue2 += -.5f;
+                }
+                player2.steer(steeringValue2);
+            } else if (binding.equals("Rights2")) {
+                if (value) {
+                    steeringValue2 += -.5f;
+                } else {
+                    steeringValue2 += .5f;
+                }
+                player2.steer(steeringValue2);
+            } else if (binding.equals("Ups2")) {
+                if (value) {
+                    accelerationValue2 -= 800;
+                } else {
+                    accelerationValue2 += 800;
+                }
+                player2.accelerate(accelerationValue2);
+                player2.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode2, "Car")));
+            } else if (binding.equals("Downs2")) {
+                if (value) {
+                    accelerationValue2 += 800;
+                } else {
+                    accelerationValue2 -= 800;
+                }
+                player2.accelerate(accelerationValue2);
+            } else if (binding.equals("Reset")) {
+                if (value) {
+                    wins1 = 0;
+                    wins2 = 0;
+                    telaInicial = true;
+                    rootNode.detachChildNamed("TextPoints");
+                    rootNode.detachChildNamed("TextWins");
+                    resetGame();
+                } else {
+                }
+            } 
         }
 
-        if (binding.equals("Lefts1")) {
-            if (value) {
-                steeringValue1 += .5f;
-            } else {
-                steeringValue1 += -.5f;
-            }
-            player1.steer(steeringValue1);
-        } else if (binding.equals("Rights1")) {
-            if (value) {
-                steeringValue1 += -.5f;
-            } else {
-                steeringValue1 += .5f;
-            }
-            player1.steer(steeringValue1);
-        } else if (binding.equals("Ups1")) {
-            if (value) {
-                accelerationValue1 -= 800;
-            } else {
-                accelerationValue1 += 800;
-            }
-            player1.accelerate(accelerationValue1);
-            player1.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode1, "Car")));
-        } else if (binding.equals("Downs1")) {
-            if (value) {
-                player1.brake(40f);
-            } else {
-                player1.brake(0f);
-            }
-        }
-
-        if (binding.equals("Lefts2")) {
-            if (value) {
-                steeringValue2 += .5f;
-            } else {
-                steeringValue2 += -.5f;
-            }
-            player2.steer(steeringValue2);
-        } else if (binding.equals("Rights2")) {
-            if (value) {
-                steeringValue2 += -.5f;
-            } else {
-                steeringValue2 += .5f;
-            }
-            player2.steer(steeringValue2);
-        } else if (binding.equals("Ups2")) {
-            if (value) {
-                accelerationValue2 -= 800;
-            } else {
-                accelerationValue2 += 800;
-            }
-            player2.accelerate(accelerationValue2);
-            player2.setCollisionShape(CollisionShapeFactory.createDynamicMeshShape(findGeom(carNode2, "Car")));
-        } else if (binding.equals("Downs2")) {
-            if (value) {
-                player2.brake(40f);
-            } else {
-                player2.brake(0f);
-            }
-        } else if (binding.equals("Reset")) {
-            if (value) {
-                wins1 = 0;
-                wins2 = 0;
-                telaInicial = true;
-                rootNode.detachChildNamed("TextPoints");
-                rootNode.detachChildNamed("TextWins");
-                resetGame();
-            } else {
-            }
-        }
+        
     }
 
     public void resetGame() {
+        
+        Quaternion q = new Quaternion();
         player1.setPhysicsLocation(new Vector3f(20, 0, 20));
-        player1.setPhysicsRotation(new Matrix3f());
+        player1.setPhysicsRotation(q.fromAngles(0, 45, 0));
         player1.setLinearVelocity(Vector3f.ZERO);
         player1.setAngularVelocity(Vector3f.ZERO);
         player1.resetSuspension();
-
+        
         player2.setPhysicsLocation(new Vector3f(-20, 0, -20));
-        player2.setPhysicsRotation(new Matrix3f());
+        player2.setPhysicsRotation(q.fromAngles(0, -90, 0));
         player2.setLinearVelocity(Vector3f.ZERO);
         player2.setAngularVelocity(Vector3f.ZERO);
         player2.resetSuspension();
@@ -324,7 +340,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
             }
 
             atualizaPontos();
-            verificaPlayerFora();
+            verificaWin();
         }
     }
 
@@ -344,7 +360,7 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
         rootNode.attachChild(label);
     }
 
-    private void verificaPlayerFora() {
+    private void verificaWin() {
         float y1 = rootNode.getChild("Car1").getLocalTranslation().y;
         float y2 = rootNode.getChild("Car2").getLocalTranslation().y;
 
@@ -355,6 +371,16 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
 
         if (y2 <= -20) {
             wins1++;
+            resetGame();
+        }
+
+        if (points1 >= 10){
+            wins1++;
+            resetGame();
+        }
+        
+        if (points2 >= 10){
+            wins2++;
             resetGame();
         }
     }
@@ -393,12 +419,20 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 Spatial s = event.getNodeA();
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
-                points1++;
+                pointsCurTime1 = System.currentTimeMillis();
+                if (pointsCurTime1 - pointsTotalTime1 >= 100) {
+                    points1++;
+                }
             } else if (event.getNodeB().getName().equals("Item")) {
                 Spatial s = event.getNodeB();
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
-                points1++;
+                
+                pointsCurTime1 = System.currentTimeMillis();
+                if (pointsCurTime1 - pointsTotalTime1 >= 100) {
+                    points1++;
+                    pointsTotalTime1 = pointsCurTime1;
+                }
             }
         }
 
@@ -409,12 +443,20 @@ public class Game extends SimpleApplication implements ActionListener, PhysicsCo
                 Spatial s = event.getNodeA();
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
-                points2++;
+                pointsCurTime2 = System.currentTimeMillis();
+                if (pointsCurTime2 - pointsTotalTime2 >= 100) {
+                    points2++;
+                    pointsTotalTime2 = pointsCurTime2;
+                }
             } else if (event.getNodeB().getName().equals("Item")) {
                 Spatial s = event.getNodeB();
                 rootNode.detachChild(s);
                 bulletAppState.getPhysicsSpace().removeAll(s);
-                points2++;
+                pointsCurTime2 = System.currentTimeMillis();
+                if (pointsCurTime2 - pointsTotalTime2 >= 100) {
+                    points2++;
+                    pointsTotalTime2 = pointsCurTime2;
+                }
             }
         }
     }
